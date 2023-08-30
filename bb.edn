@@ -1,0 +1,22 @@
+{:paths          ["."]
+ :deps           {}
+ :min-bb-version "0.4.0"
+ :tasks          {-pom.xml
+                  {:doc  "Creates pom.xml"
+                   :task (clojure "-Spom")}
+                  deps-prep
+                  {:doc  "Build the required deps"
+                   :task (clojure "-T:build prep-deps")}
+                  test
+                  {:requires ()
+                   :doc      "Run tests"
+                   :task     (clojure "-M:test")}
+                  lint
+                  {:doc  "Either clj-kondo CLI or the JVM version"
+                   :task (try
+                           (shell "clj-kondo" "--lint" "src" "test")
+                           (catch Exception _
+                             (clojure "-M:clj-kondo")))}
+                  outdated
+                  {:doc  "Checks for outdated dependencies."
+                   :task (clojure "-Sdeps '{:deps {org.slf4j/slf4j-nop {:mvn/version \"2.0.7\"} com.github.liquidz/antq {:mvn/version \"RELEASE\"}}}' -M -m antq.core")}}}
