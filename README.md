@@ -33,6 +33,38 @@ In your REPL:
 ; => [{:id "query-id"}]
 ```
 
+## Why would you use it?
+
+The use cases are the same as the Lucene Monitor framework itself.
+
+### Alerting
+
+Scraping e.g. news website and sending notifications immediately when
+something (expressed as a complicated search query or multiple queries) is mentioned.
+
+### Search without indices
+
+For search, having data indexed in the likes of Elasticsearch is great.
+But if your data by design is divided into private buckets e.g. per user or per company,
+with relatively frequent updates, skewed data valumes, and a bursty search volume?
+Having **ALL** data searchable at **ALL** times can get pretty expensive!
+
+To lower the cost you could pull out one weird trick: no indexing!
+Index the data only during the search.
+Of course, you're limited by the disk IO, but have you seen what disks are capable of
+[these](https://blog.vespa.ai/announcing-vector-streaming-search/)
+[days](https://www.allthingsdistributed.com/2023/07/building-and-operating-a-pretty-big-storage-system.html)?
+
+The Lucene Monitor is suitable to plow through a lot data really fast.
+
+### Annotating text data
+
+Given that [NER](https://en.wikipedia.org/wiki/Named-entity_recognition) is mostly done with ML these days,
+there is still need for the good ol dictionary based approaches.
+E.g. you have a controlled lists of phone numbers, people names (from various coutries and nationalities)
+etc, that you want to collect some data about from a large blob of data like [the Common Crawl](https://commoncrawl.org)
+for further analysis.
+
 ## Queries across fields
 
 Queries can span multiple fields:
