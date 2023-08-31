@@ -149,6 +149,7 @@ A fine-grained text analysis configuration is supported.
 The text analysis order in priority (high to low):
 - each individual query can specify its default field and query string analyzers;
   - i.e. asymmetric tokenization is supported
+  - Query strings can be expanded with synonyms
   - a language specific analysis can be done for each query
   - query string analysis depends on the configured query parser
 - Schema with analyzers per field;
