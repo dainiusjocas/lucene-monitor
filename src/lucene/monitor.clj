@@ -124,12 +124,13 @@
           (if (not= 0 (match monitor doc {:mode :count}))
             (rf acc doc)
             acc)))))))
-(comment
-  (let [a (filter-xf {} [{:id "12" :query "text"}])]
-    [(into [] a [{:text "foo text bar"} {:text "no match"}])
-     (into [] a [{:text "foo text bar"} {:text "no match"}])])
 
+(comment
   (with-open [monitor (monitor {} [{:id "12" :query "text"}])]
-    (let [a (filter-xf monitor)]
-      [(into [] a [{:text "foo text bar"} {:text "no match"}])
-       (into [] a [{:text "foo text bar"} {:text "no match"}])])))
+    (let [monitor-xf (filter-xf monitor)]
+      [(into [] monitor-xf [{:text "foo text bar"} {:text "no match"}])
+       (into [] monitor-xf [{:text "foo text bar"} {:text "no match"}])]))
+
+  (let [monitor-xf (filter-xf {} [{:id "12" :query "text"}])]
+    [(into [] monitor-xf [{:text "foo text bar"} {:text "no match"}])
+     (into [] monitor-xf [{:text "foo text bar"} {:text "no match"}])]))
