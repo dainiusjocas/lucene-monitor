@@ -1,0 +1,66 @@
+(ns lucene.monitor.matching
+  (:require [lucene.monitor.document :as document])
+  (:import (org.apache.lucene.monitor QueryMatch ScoringMatch HighlightsMatch HighlightsMatch$Hit
+                                      MultiMatchingQueries MatcherFactory)
+           (org.apache.lucene.document Document)))
+
+(defn id-fn [^QueryMatch query-match]
+  {:id (.getQueryId query-match)})
+
+(defn score-fn [^ScoringMatch query-match]
+  {:id    (.getQueryId query-match)
+   :score (.getScore query-match)})
+
+(defn highlights-fn [^HighlightsMatch query-match]
+  {:id         (.getQueryId query-match)
+   :highlights (reduce
+                 (fn [acc field-hits]
+                   (assoc acc
+                     (.getKey field-hits)
+                     (mapv (fn [^HighlightsMatch$Hit hit]
+                             {:start-position (.-startPosition hit)
+                              :end-position   (.-endPosition hit)
+                              :start-offset   (.-startOffset hit)
+                              :end-offset     (.-endOffset hit)})
+                           (.getValue field-hits))))
+                 {} (.getHits query-match))})
+
+(defn get-fn [options]
+  (case (keyword (:mode options))
+    :id id-fn
+    :score score-fn
+    :highlight highlights-fn
+    id-fn))
+
+(defn matcher ^MatcherFactory [options]
+  (case (keyword (:mode options))
+    :id (QueryMatch/SIMPLE_MATCHER)
+    :score (ScoringMatch/DEFAULT_MATCHER)
+    :highlight (HighlightsMatch/MATCHER)
+    (QueryMatch/SIMPLE_MATCHER)))
+
+(defn new-match
+  "We can also get the detailed match data, with timings and stuff.
+  Control this via flag in opts."
+  [my-docs monitor field-names opts]
+  (let [batch (if (map? my-docs) [my-docs] my-docs)
+        #^"[Lorg.apache.lucene.document.Document;" docs
+        (into-array Document (map #(document/->doc % field-names) batch))
+        ndocs (count batch)
+        match-mode (:mode opts)
+        ^MultiMatchingQueries mmqs (.match monitor docs (matcher opts))
+        from-query-match-fn (get-fn opts)
+        matches (loop [i 0 acc (transient [])]
+                  (if (< i ndocs)
+                    (recur (inc i) (conj! acc (if (= :count match-mode)
+                                                (.getMatchCount mmqs i)
+                                                (mapv from-query-match-fn (.getMatches mmqs i)))))
+                    (persistent! acc)))]
+    (cond-> matches
+            (map? my-docs) (first)
+            (true? (:with-details opts)) (with-meta
+                                           {:batch-size          (.getBatchSize mmqs)
+                                            :queries-run         (.getQueriesRun mmqs)
+                                            :search-time-ms      (.getSearchTime mmqs)
+                                            :query-build-time-ns (.getQueryBuildTime mmqs)
+                                            :errors              (.getErrors mmqs)}))))
