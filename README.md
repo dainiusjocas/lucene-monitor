@@ -33,6 +33,27 @@ In your REPL:
 
 ## Queries across fields
 
+## Persistent query sets
+
+You can create a monitor that creates an index backed by the directory in the filesystem.
+It allows you to load queries from a previously created index.
+
+Usage:
+```clojure
+(let [options {:index-path "target/monitor-index"}
+      queries [{:id "12" :query "text"}]
+      txt "foo text bar"]
+  (with-open [monitor (m/monitor options queries)]
+    (prn (m/match-string monitor txt)))
+
+  ; Notice that this time we do not supply queries
+  ; They are loader from the disk
+  (with-open [monitor (m/monitor options)]
+    (prn (m/match-string monitor txt))))
+; => [{:id "12"}]
+; => [{:id "12"}]
+```
+
 ## Transducer API
 
 Monitor can be used to **filter** documents in a transducing context.
