@@ -1,13 +1,7 @@
 {:paths          ["."]
  :deps           {}
  :min-bb-version "0.4.0"
- :tasks          {-pom.xml
-                  {:doc  "Creates pom.xml"
-                   :task (clojure "-Spom")}
-                  deps-prep
-                  {:doc  "Build the required deps"
-                   :task (clojure "-T:build prep-deps")}
-                  test
+ :tasks          {test
                   {:requires ()
                    :doc      "Run tests"
                    :task     (clojure "-M:test")}
@@ -17,6 +11,11 @@
                            (shell "clj-kondo" "--lint" "src" "test")
                            (catch Exception _
                              (clojure "-M:clj-kondo")))}
+                  release
+                  {:requires ([clojure.string :as str])
+                   :doc      "Makes a git tag and pushes it to the Github to trigger release with GH action."
+                   :task     (let [command (str/join " " (concat ["-T:build trigger-release"] (or *command-line-args* [:snapshot false])))]
+                               (clojure command))}
                   outdated
                   {:doc  "Checks for outdated dependencies."
                    :task (clojure "-Sdeps '{:deps {org.slf4j/slf4j-nop {:mvn/version \"2.0.7\"} com.github.liquidz/antq {:mvn/version \"RELEASE\"}}}' -M -m antq.core")}}}

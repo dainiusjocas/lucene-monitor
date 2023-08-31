@@ -11,8 +11,6 @@
 (defn- the-version [patch] (format "1.0.%s" patch))
 (def version (the-version (b/git-count-revs nil)))
 (def snapshot (the-version "999-SNAPSHOT"))
-
-(def basis (b/create-basis {:project "deps.edn"}))
 (def class-dir "classes")
 
 (defn clean [& _]

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <name>lucene-monitor</name>
+  <description>Clojure wrapper for the Lucene Monitor framework</description>
+  <url>https://github.com/dainiusjocas/lucene-momnitor</url>
+  <licenses>
+    <license>
+      <name>The Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <name>Dainius Jocas</name>
+      <email>dainius.jocas@gmail.com</email>
+      <organization>jocas.lt</organization>
+      <organizationUrl>http://www.jocas.lt</organizationUrl>
+    </developer>
+  </developers>
+  <scm>
+    <url>https://github.com/dainiusjocas/lucene-monitor</url>
+    <connection>scm:git:git://github.com/dainiusjocas/lucene-monitor.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/dainiusjocas/lucene-monitor.git</developerConnection>
+  </scm>
+</project>
