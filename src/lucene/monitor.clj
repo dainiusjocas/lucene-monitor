@@ -45,6 +45,7 @@
     :default-field-analyzer - how to analyze tet fields: default=standard analyzer
     :default-query-analyzer - when specified is used for queries that do no
       specify analyzer, is used at the queries loading from directory.
+    :default-match-mode
     :presearcher
     :index-path
     :default-query-parser
@@ -64,14 +65,18 @@
          ^Monitor monitor (setup/monitor options
                                          default-query-analyzer
                                          field-name->lucene-analyzer
-                                         maintain-mapping-fn)]
+                                         maintain-mapping-fn)
+         default-match-mode (:default-match-mode options)]
      (reify LuceneMonitor
        (match-string [this string] (match-string this string {}))
        (match-string [this string options]
          (match this {default-query-field string} options))
        (match [this docs] (match this docs {}))
        (match [_ docs options]
-         (matching/new-match docs monitor (keys field-name->lucene-analyzer) options))
+         (let [match-options (if (and default-match-mode (nil? (:mode options)))
+                               (assoc options :mode default-match-mode)
+                               options)]
+           (matching/new-match docs monitor (keys field-name->lucene-analyzer) match-options)))
        (get-query-count [_] (.getQueryCount monitor))
        (get-query [_ query-id]
          (queries/->conf (.getQuery monitor query-id)))

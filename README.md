@@ -4,7 +4,10 @@ Clojure wrapper for the [Lucene Monitor](https://lucene.apache.org/core/9_7_0/mo
 
 Features:
 - Monitoring if a stream documents matches any registered Lucene queries
-- Each query can define its own text analyzers for both: index and query time
+  - either one-by-one or in batches
+- Each query can define its own:
+  - text analyzers for both: index and query time
+  - query parser
 - Multiple matching modes
 - Pre-filtering of queries with [`Presearcher`s](https://lucene.apache.org/core/9_7_0/monitor/org/apache/lucene/monitor/Presearcher.html)
 - Persistent query sets
@@ -32,6 +35,42 @@ In your REPL:
 ```
 
 ## Queries across fields
+
+## Matching modes
+
+Several matching modes are supported:
+- count: returns the count of matched queries per input document;
+- id (the default): for each input document returns a list of query IDs;
+- score: also returns the matching score next to the query ID;
+- highlight: returns spans of text that matched the query.
+
+Usage:
+```clojure
+(with-open [monitor (m/monitor {} [{:id "1" :query "test"}])]
+  ; The default matching mode is :id
+  (m/match-string monitor "foo test bar")
+  ; => [{:id "1"}]
+  (m/match-string monitor "foo test bar" {:mode :count})
+  ; => 1
+  (m/match-string monitor "foo test bar" {:mode :id})
+  ; => [{:id "1"}]
+  (prn (m/match-string monitor "foo test bar" {:mode :score}))
+  ; => [{:id "1", :score 0.13076457}]
+  (m/match-string monitor "foo test bar" {:mode :highlight})
+  ; => [{:id         "1"
+  ;      :highlights {"text" [{:end-offset     8
+  ;                            :end-position   1
+  ;                            :start-offset   4
+  ;                            :start-position 1}]}
+  ,)
+```
+
+A default match mode can be specified:
+```clojure
+(with-open [monitor (m/monitor {:default-match-mode :highlight} [{:id "1" :query "test"}])]
+  (m/match-string monitor "prefix test suffix"))
+; [{:id "1", :highlights {"text" [{:start-position 1, :end-position 1, :start-offset 7, :end-offset 11}]}}]
+```
 
 ## Persistent query sets
 
@@ -78,6 +117,16 @@ Usage:
 (let [monitor-xf (m/filter-xf {} [{:id "12" :query "text"}])]
   (into [] monitor-xf [{:text "foo text bar"} {:text "no match"}]))
 ; => [{:text "foo text bar"}]
+
+; Docs can be matched in batches for efficiency
+(let [monitor-xf (m/filter-xf {} [{:id "12" :query "text"}])]
+  (into []
+        (comp monitor-xf (partition-all 2) cat)
+        [{:text "foo text bar"}
+         {:text "no match"}
+         {:text "another text doc"}
+         {:text "no match"}]))
+; => [{:text "foo text bar"} {:text "another text doc"}]
 ```
 
 NOTES:
@@ -86,10 +135,12 @@ NOTES:
 ## What is next?
 
 - [ ] Deploy to Clojars.
-- [ ] Support other than string data types.
-- [ ] Make an HTTP server that does monitoring with distributed mode.
+- [ ] Support other than string data types in documents.
+- [ ] Transducer that annotates documents.
+- [ ] Implement the [debug API](https://lucene.apache.org/core/9_7_0/monitor/org/apache/lucene/monitor/Monitor.html#debug(org.apache.lucene.document.Document%5B%5D,org.apache.lucene.monitor.MatcherFactory))
+- [ ] Make an HTTP server that does monitoring with a distributed mode.
+- [ ] Scoring mode that both scores and highlights.
 - [ ] Throughput benchmark.
-- [ ] Transducer constructor for annotating documents.
 
 ## License
 

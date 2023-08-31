@@ -184,6 +184,16 @@
                                      :start-position 1}]}
                :id         "1"}] matches))))
 
+  (testing "default matching mode"
+    (with-open [monitor (m/monitor {:default-match-mode :highlight} [{:id "1" :query "test"}])]
+      (is (= [{:id "1"
+               :highlights {"text" [{:start-position 1
+                                     :end-position 1
+                                     :start-offset 7
+                                     :end-offset 11}]}}]
+             (m/match-string monitor "prefix test suffix")))))
+
+
   (testing "phrase with highlights"
     (with-open [monitor (m/monitor {} [{:id "1" :query "\"my test\""}])]
       (is (= [] (m/match-string monitor "prefix test suffix")))
