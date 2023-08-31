@@ -36,6 +36,17 @@ In your REPL:
 
 ## Queries across fields
 
+Queries can span multiple fields:
+```clojure
+(with-open [monitor (m/monitor {} [{:id    "1"
+                                    :query "field-a:foo AND field-b:bar"}])]
+  (m/match monitor {:field-a "prefix foo suffix"})
+  ; => []
+  (m/match monitor {:field-a "prefix foo suffix"
+                    :field-b "prefix bar suffix"}))
+; => [{:id "1"}]
+```
+
 ## Matching modes
 
 Several matching modes are supported:
