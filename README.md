@@ -3,11 +3,11 @@
 Clojure wrapper for the [Lucene Monitor](https://lucene.apache.org/core/9_7_0/monitor/index.html) framework.
 
 Features:
-- Monitoring if a stream documents matches any registered Lucene queries
+- Monitoring a stream documents to match registered Lucene queries
   - either one-by-one or in batches
 - Each query can define its own:
-  - text analyzers for both: index and query time
-  - query parser
+  - [text analyzers](https://github.com/dainiusjocas/lucene-custom-analyzer) for both: index and query time
+  - [Lucene query parser](https://github.com/dainiusjocas/lucene-query-parsing)
 - Multiple matching modes
 - Pre-filtering of queries with [`Presearcher`s](https://lucene.apache.org/core/9_7_0/monitor/org/apache/lucene/monitor/Presearcher.html)
 - Persistent query sets
@@ -41,7 +41,7 @@ Queries can span multiple fields:
 (with-open [monitor (m/monitor {} [{:id    "1"
                                     :query "field-a:foo AND field-b:bar"}])]
   (m/match monitor {:field-a "prefix foo suffix"})
-  ; => []
+  ; => [] i.e. no matches
   (m/match monitor {:field-a "prefix foo suffix"
                     :field-b "prefix bar suffix"}))
 ; => [{:id "1"}]
@@ -143,14 +143,49 @@ Usage:
 NOTES:
 - Documents as raw strings are not supported. (You can implement it for yourself if needed)
 
+## Flexible text analysis
+
+A fine-grained text analysis configuration is supported.
+The text analysis order in priority (high to low):
+- each individual query can specify its default field and query string analyzers;
+  - i.e. asymmetric tokenization is supported
+  - a language specific analysis can be done for each query
+  - query string analysis depends on the configured query parser
+- Schema with analyzers per field;
+- Default analyzers for both field and query.
+
+There are too many possible combinations to demonstrate, so, I encourage you to experiment.
+However, by default you don't need to configure anything: start simple and fine-tune as much as you need. 
+
+Analyzers are created with the [lucene-custom-analyzer](https://github.com/dainiusjocas/lucene-custom-analyzer) library. 
+
+A really convoluted example:
+```clojure
+(with-open [monitor (m/monitor
+                      {:schema        {:my-field-name {:analyzer {:token-filters [:reverseString]}}}
+                       :default-field          "my-text-field"
+                       :default-field-analyzer {:token-filters [:lowercase]}
+                       :default-query-analyzer {:token-filters [:uppercase]}
+                       :default-query-parser   {:name     :classic
+                                                :analyzer {:token-filters [:uppercase]}}})]
+  (m/register monitor {:id            "12"
+                       :query         "test"
+                       :default-field "my-another-field"
+                       :analyzer      {:token-filters [:reverseString :uppercase]}
+                       :query-parser  {:name     :complex-phrase
+                                       :analyzer {:token-filters [:reverseString :uppercase]}}}))
+```
+
 ## What is next?
 
 - [ ] Deploy to Clojars.
 - [ ] Support other than string data types in documents.
+- [ ] Support nested documents.
 - [ ] Transducer that annotates documents.
 - [ ] Implement the [debug API](https://lucene.apache.org/core/9_7_0/monitor/org/apache/lucene/monitor/Monitor.html#debug(org.apache.lucene.document.Document%5B%5D,org.apache.lucene.monitor.MatcherFactory))
-- [ ] Make an HTTP server that does monitoring with a distributed mode.
+- [ ] Demo an HTTP interface that does monitoring with a distributed mode.
 - [ ] Scoring mode that both scores and highlights.
+- [ ] Provide Malli schemas or Specs.
 - [ ] Throughput benchmark.
 
 ## License
