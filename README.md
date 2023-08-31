@@ -176,6 +176,33 @@ A really convoluted example:
                                        :analyzer {:token-filters [:reverseString :uppercase]}}}))
 ```
 
+## Query IDs
+
+Query IDs are optional.
+Specifying query ID allows to duplicate queries in the monitor.
+
+When IDs are not provided, a query map hash is used as a query ID.
+Hashing query effectively deduplicate identical queries.
+You might consider leveraging hashing in combination with getting the queries out of the monitor, e.g.:
+```clojure
+(with-open [monitor (m/monitor {} [{:query "text" :default-field "my-field"}])]
+  (mapv #(m/get-query monitor (:id %))
+        (m/match monitor {:my-field "foo text bar"})))
+; =>  [{:default-field "my-field", :id "1067106267", :query "text"}]
+```
+
+## Queries support metadata
+
+In case you want to store some details (e.g. sources) about the query in the monitor,
+each query can specify its `:meta`, e.g.:
+```clojure
+(with-open [monitor (m/monitor {} [{:query "text"
+                                    :meta {:my-type "example"}}])]
+  (mapv #(m/get-query monitor (:id %))
+        (m/match-string monitor "foo text bar")))
+; => [{:meta {:my-type "example"}, :default-field "text", :id "1772475640", :query "text"}]
+```
+
 ## What is next?
 
 - [ ] Deploy to Clojars.
@@ -183,7 +210,7 @@ A really convoluted example:
 - [ ] Support nested documents.
 - [ ] Transducer that annotates documents.
 - [ ] Implement the [debug API](https://lucene.apache.org/core/9_7_0/monitor/org/apache/lucene/monitor/Monitor.html#debug(org.apache.lucene.document.Document%5B%5D,org.apache.lucene.monitor.MatcherFactory))
-- [ ] Demo an HTTP interface that does monitoring with a distributed mode.
+- [ ] Demo an [Elasticsearch-Percolator-like](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-percolate-query.html) interface that does monitoring with a distributed mode.
 - [ ] Scoring mode that both scores and highlights.
 - [ ] Provide Malli schemas or Specs.
 - [ ] Throughput benchmark.
