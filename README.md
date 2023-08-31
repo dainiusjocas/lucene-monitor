@@ -15,11 +15,10 @@ Features:
 
 ## Quickstart
 
-Add the library as a git dependency to your project in the `deps.edn` file:
+Add the library to dependencies in the `deps.edn` file:
 
 ```clojure
-{:deps
- {io.github.dainiusjocas/lucene-monitor {:git/sha "FIND_LATEST_COMMIT"}}}
+{:deps {lt.jocas/lucene-monitor {:mvn/version "1.0.2"}}}
 ```
 
 In your REPL:
@@ -206,7 +205,6 @@ each query can specify its `:meta`, e.g.:
 
 ## What is next?
 
-- [ ] Deploy to Clojars.
 - [ ] Support other than string data types in documents.
 - [ ] Support nested documents.
 - [ ] Transducer that annotates documents.
