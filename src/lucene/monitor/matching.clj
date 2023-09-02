@@ -52,15 +52,19 @@
         from-query-match-fn (get-fn opts)
         matches (loop [i 0 acc (transient [])]
                   (if (< i ndocs)
-                    (recur (inc i) (conj! acc (if (= :count match-mode)
-                                                (.getMatchCount mmqs i)
-                                                (mapv from-query-match-fn (.getMatches mmqs i)))))
+                    (recur (inc i)
+                           (conj! acc (if (= :count match-mode)
+                                        (.getMatchCount mmqs i)
+                                        (mapv from-query-match-fn (.getMatches mmqs i)))))
                     (persistent! acc)))]
     (cond-> matches
-            (map? my-docs) (first)
-            (true? (:with-details opts)) (with-meta
-                                           {:batch-size          (.getBatchSize mmqs)
-                                            :queries-run         (.getQueriesRun mmqs)
-                                            :search-time-ms      (.getSearchTime mmqs)
-                                            :query-build-time-ns (.getQueryBuildTime mmqs)
-                                            :errors              (.getErrors mmqs)}))))
+            (map? my-docs)
+            (first)
+            (and (true? (:with-details opts))
+                 (not (= :count match-mode)))
+            (with-meta
+              {:batch-size          (.getBatchSize mmqs)
+               :queries-run         (.getQueriesRun mmqs)
+               :search-time-ms      (.getSearchTime mmqs)
+               :query-build-time-ns (.getQueryBuildTime mmqs)
+               :errors              (.getErrors mmqs)}))))

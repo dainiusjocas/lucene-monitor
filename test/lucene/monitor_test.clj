@@ -113,6 +113,18 @@
           (is (= [{:id "12"}] resp-with-details))
           (is (= #{:batch-size :errors :queries-run :query-build-time-ns :search-time-ms}
                  (set (keys (meta resp-with-details))))))))
+    (testing "with details and mode :count should not throw exception"
+      (with-open [monitor (m/monitor options queries)]
+        (let [resp (m/match monitor {:text "foo text bar"} {})
+              resp-with-details (m/match monitor
+                                         {:text "foo text bar"}
+                                         {:with-details true
+                                          :mode :count})]
+          (is (= [{:id "12"}] resp))
+          (is (empty? (meta resp)))
+          (is (= 1 resp-with-details))
+          ; int doesn't support metadata
+          (is (nil? (meta resp-with-details))))))
     (testing "details collection for batch"
       (with-open [monitor (m/monitor options queries)]
         (let [resp (m/match monitor [{:text "foo text bar"}
