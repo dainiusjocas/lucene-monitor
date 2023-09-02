@@ -113,9 +113,8 @@
       ; Original query record is encoded in the Metadata
       (BytesRef. ^CharSequence (.get (.getMetadata monitor-query) CONF_KEY)))
     (deserialize [_ bytes-ref]
-      (let [mq (serde/deserialize (io/reader (.bytes ^BytesRef bytes-ref)))
-            wo-meta-meta (update mq :meta dissoc CONF_KEY)]
-        (->monitor-query wo-meta-meta default-query-analyzer maintain-mapping-fn)))))
+      (let [mq (serde/deserialize (io/reader (.bytes ^BytesRef bytes-ref)))]
+        (->monitor-query mq default-query-analyzer maintain-mapping-fn)))))
 
 (defn ->conf [^MonitorQuery monitor-query]
   (-> monitor-query (.getMetadata) (get CONF_KEY) (serde/deserialize)))

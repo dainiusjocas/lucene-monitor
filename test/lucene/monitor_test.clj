@@ -10,8 +10,7 @@
       (is (= [{:id "12"}] (m/match-string monitor "foo text bar")))
       (is (= {:id            "12"
               :query         "text"
-              :default-field "text"
-              :meta          nil}
+              :default-field "text"}
              (m/get-query monitor "12")))
       (is (= 1 (m/get-disjunct-count monitor)))
       (is (= #{"12"} (m/get-query-ids monitor)))))
