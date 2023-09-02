@@ -1,7 +1,8 @@
 (ns lucene.monitor.matching
   (:require [lucene.monitor.document :as document])
-  (:import (org.apache.lucene.monitor QueryMatch ScoringMatch HighlightsMatch HighlightsMatch$Hit
-                                      MultiMatchingQueries MatcherFactory)
+  (:import (org.apache.lucene.monitor Monitor QueryMatch ScoringMatch
+                                      HighlightsMatch HighlightsMatch$Hit
+                                      MatchingQueries MultiMatchingQueries MatcherFactory)
            (org.apache.lucene.document Document)))
 
 (defn id-fn [^QueryMatch query-match]
@@ -38,6 +39,22 @@
     :score (ScoringMatch/DEFAULT_MATCHER)
     :highlight (HighlightsMatch/MATCHER)
     (QueryMatch/SIMPLE_MATCHER)))
+
+(defn match-single [^Monitor monitor ^Document document opts]
+  (let [match-mode (:mode opts)
+        ^MatchingQueries mmqs (.match monitor document (matcher opts))
+        from-query-match-fn (get-fn opts)
+        matches (if (= :count match-mode)
+                  (.getMatchCount mmqs)
+                  (mapv from-query-match-fn (.getMatches mmqs)))]
+    (cond-> matches
+            (and (true? (:with-details opts))
+                 (not (= :count match-mode)))
+            (with-meta
+              {:queries-run         (.getQueriesRun mmqs)
+               :search-time-ms      (.getSearchTime mmqs)
+               :query-build-time-ns (.getQueryBuildTime mmqs)
+               :errors              (.getErrors mmqs)}))))
 
 (defn match-batch [monitor #^"[Lorg.apache.lucene.document.Document;" docs opts]
   (let [ndocs (alength docs)

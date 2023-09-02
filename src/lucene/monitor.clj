@@ -1,6 +1,7 @@
 (ns lucene.monitor
   (:gen-class)
-  (:require [lucene.monitor.queries :as queries]
+  (:require [lucene.monitor.document :as document]
+            [lucene.monitor.queries :as queries]
             [lucene.monitor.matching :as matching]
             [lucene.monitor.setup :as setup])
   (:import (java.io Closeable)
@@ -70,7 +71,16 @@
      (reify LuceneMonitor
        (match-string [this string] (match-string this string {}))
        (match-string [this string options]
-         (match this {default-query-field string} options))
+         (if (string? string)
+           (matching/match-single monitor
+                                  (document/string->doc
+                                    string
+                                    default-query-field
+                                    (.keySet field-name->lucene-analyzer))
+                                  (if (and default-match-mode (nil? (:mode options)))
+                                    (assoc options :mode default-match-mode)
+                                    options))
+           (match this {default-query-field string} options)))
        (match [this docs] (match this docs {}))
        (match [_ docs options]
          (let [match-options (if (and default-match-mode (nil? (:mode options)))
