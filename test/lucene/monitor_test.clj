@@ -11,8 +11,7 @@
       (is (= {:id            "12"
               :query         "text"
               :default-field "text"
-              :meta          nil
-              :query-parser  nil}
+              :meta          nil}
              (m/get-query monitor "12")))
       (is (= 1 (m/get-disjunct-count monitor)))
       (is (= #{"12"} (m/get-query-ids monitor)))))
@@ -28,8 +27,7 @@
       (is (= {:id            "12"
               :query         "text"
               :default-field "text"
-              :meta          {:a "b"}
-              :query-parser  nil}
+              :meta          {:a "b"}}
              (m/get-query monitor "12")))
       (is (= 1 (m/get-disjunct-count monitor)))
       (is (= #{"12"} (m/get-query-ids monitor))))

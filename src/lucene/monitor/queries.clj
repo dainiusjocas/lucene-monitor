@@ -89,7 +89,7 @@
   "If query parser is not specified then assoc the default query parser conf."
   [default-query-parser-conf]
   (map (fn [query]
-         (if (empty? (get query :query-parser))
+         (if (and default-query-parser-conf (empty? (get query :query-parser)))
            (assoc query :query-parser default-query-parser-conf)
            query))))
 
