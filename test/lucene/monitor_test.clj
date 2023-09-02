@@ -10,7 +10,9 @@
       (is (= [{:id "12"}] (m/match-string monitor "foo text bar")))
       (is (= {:id            "12"
               :query         "text"
-              :default-field "text"}
+              :default-field "text"
+              :meta          nil
+              :query-parser  nil}
              (m/get-query monitor "12")))
       (is (= 1 (m/get-disjunct-count monitor)))
       (is (= #{"12"} (m/get-query-ids monitor)))))
@@ -26,7 +28,8 @@
       (is (= {:id            "12"
               :query         "text"
               :default-field "text"
-              :meta          {:a "b"}}
+              :meta          {:a "b"}
+              :query-parser  nil}
              (m/get-query monitor "12")))
       (is (= 1 (m/get-disjunct-count monitor)))
       (is (= #{"12"} (m/get-query-ids monitor))))
@@ -186,11 +189,11 @@
 
   (testing "default matching mode"
     (with-open [monitor (m/monitor {:default-match-mode :highlight} [{:id "1" :query "test"}])]
-      (is (= [{:id "1"
+      (is (= [{:id         "1"
                :highlights {"text" [{:start-position 1
-                                     :end-position 1
-                                     :start-offset 7
-                                     :end-offset 11}]}}]
+                                     :end-position   1
+                                     :start-offset   7
+                                     :end-offset     11}]}}]
              (m/match-string monitor "prefix test suffix")))))
 
 

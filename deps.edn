@@ -3,7 +3,6 @@
  :deps {org.apache.lucene/lucene-monitor {:mvn/version "9.7.0"}
         lt.jocas/lucene-custom-analyzer  {:mvn/version "1.0.30"}
         lt.jocas/lucene-query-parsing    {:mvn/version "1.0.11"}
-        metosin/jsonista                 {:mvn/version "0.3.7"}
         com.cnuernber/charred            {:mvn/version "1.032"}}
  :aliases
  {:dev   {:extra-paths ["dev"]
