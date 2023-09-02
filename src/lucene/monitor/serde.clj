@@ -1,5 +1,6 @@
 (ns lucene.monitor.serde
-  (:require [jsonista.core :as json]))
+  (:require [charred.api :as charred]
+            [jsonista.core :as json]))
 
 (def ^:private object-mapper
   (json/object-mapper {:encode-key-fn true
@@ -9,4 +10,5 @@
   (json/write-value-as-string o object-mapper))
 
 (defn deserialize [o]
-  (json/read-value o object-mapper))
+  (charred/read-json o :key-fn keyword)
+  #_(json/read-value o object-mapper))
