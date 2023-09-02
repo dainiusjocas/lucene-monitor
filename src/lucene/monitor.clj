@@ -67,9 +67,10 @@
                                          default-query-analyzer
                                          field-name->lucene-analyzer
                                          maintain-mapping-fn)
-         default-match-mode (:default-match-mode options)]
+         default-match-mode (:default-match-mode options)
+         default-match-options {:mode default-match-mode}]
      (reify LuceneMonitor
-       (match-string [this string] (match-string this string {}))
+       (match-string [this string] (match-string this string default-match-options))
        (match-string [this string options]
          (if (string? string)
            (matching/match-single monitor
@@ -81,7 +82,7 @@
                                     (assoc options :mode default-match-mode)
                                     options))
            (match this {default-query-field string} options)))
-       (match [this docs] (match this docs {}))
+       (match [this docs] (match this docs default-match-options))
        (match [_ docs options]
          (let [match-options (if (and default-match-mode (nil? (:mode options)))
                                (assoc options :mode default-match-mode)
