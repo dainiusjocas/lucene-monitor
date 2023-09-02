@@ -14,7 +14,11 @@ jobs:
       - name: Cache maven deps
         uses: actions/cache@v3.3.1
         with:
-          path: ~/.m2/repository
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+            ~/.clojure
+            ~/.cpcache
           key: ${{ runner.os }}-maven-${{ hashFiles('**/deps.edn') }}
           restore-keys: |
             ${{ runner.os }}-maven-

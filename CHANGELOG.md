@@ -4,7 +4,8 @@ For a list of breaking changes, check [here](#breaking-changes).
 
 ## Unreleased
 
-- Replace `Jsonista` with `charred` 
+- Replace `Jsonista` with `charred`
+- fix: match opts `{:with-details true}` and {:mode :count} are incompatible
 
 ## 1.0.2 (2023-08-31)
 
