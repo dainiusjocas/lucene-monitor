@@ -1,12 +1,13 @@
 (ns lucene.monitor.matching
   (:require [lucene.monitor.document :as document])
-  (:import (java.util Map$Entry)
+  (:import (java.util Map Map$Entry)
            (org.apache.lucene.monitor Monitor QueryMatch ScoringMatch
                                       HighlightsMatch HighlightsMatch$Hit
                                       MatchingQueries MultiMatchingQueries MatcherFactory)
            (org.apache.lucene.document Document)))
 
 (set! *warn-on-reflection* true)
+
 (defn id-fn [^QueryMatch query-match]
   {:id (.getQueryId query-match)})
 
@@ -65,18 +66,20 @@
         from-query-match-fn (get-fn opts)
         matches (loop [i 0 acc (transient [])]
                   (if (< i ndocs)
-                    (recur (inc i) (conj! acc (if (= :count match-mode)
-                                                (.getMatchCount mmqs i)
-                                                (mapv from-query-match-fn (.getMatches mmqs i)))))
+                    (recur (inc i)
+                           (conj! acc (if (= :count match-mode)
+                                        (.getMatchCount mmqs i)
+                                        (mapv from-query-match-fn (.getMatches mmqs i)))))
                     (persistent! acc)))]
     (cond-> matches
             (and (true? (:with-details opts))
-                 (not (= :count match-mode))) (with-meta
-                                                {:batch-size          (.getBatchSize mmqs)
-                                                 :queries-run         (.getQueriesRun mmqs)
-                                                 :search-time-ms      (.getSearchTime mmqs)
-                                                 :query-build-time-ns (.getQueryBuildTime mmqs)
-                                                 :errors              (.getErrors mmqs)}))))
+                 (not (= :count match-mode)))
+            (with-meta
+              {:batch-size          (.getBatchSize mmqs)
+               :queries-run         (.getQueriesRun mmqs)
+               :search-time-ms      (.getSearchTime mmqs)
+               :query-build-time-ns (.getQueryBuildTime mmqs)
+               :errors              (.getErrors mmqs)}))))
 
 (defn take-first-and-meta [matches]
   (let [first-match (first matches)]
@@ -88,9 +91,11 @@
   "We can also get the detailed match data, with timings and stuff.
   Control this via flag in opts."
   [my-docs monitor field-names opts]
-  (let [batch (if (sequential? my-docs) my-docs [my-docs])
-        arr (make-array Document (count batch))
-        #^"[Lorg.apache.lucene.document.Document;" docs
-        (amap #^"[Lorg.apache.lucene.document.Document;" arr idx ret ^Document (document/->doc (nth batch idx) field-names))]
-    (cond-> (match-batch monitor docs opts)
+  (let [batch (if (instance? Map my-docs)
+                (doto #^"[Lorg.apache.lucene.document.Document;" (make-array Document 1)
+                  (aset 0 (document/->doc my-docs field-names)))
+                (let [#^"[Lorg.apache.lucene.document.Document;" arr
+                      (make-array Document (count my-docs))]
+                  (amap arr idx _ ^Document (document/->doc (nth my-docs idx) field-names))))]
+    (cond-> (match-batch monitor batch opts)
             (map? my-docs) (take-first-and-meta))))
