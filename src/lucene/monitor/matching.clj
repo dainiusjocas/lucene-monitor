@@ -88,6 +88,6 @@
   [my-docs monitor field-names opts]
   (let [batch (if (sequential? my-docs) my-docs [my-docs])
         #^"[Lorg.apache.lucene.document.Document;" docs
-        (into-array Document (map #(document/->doc % field-names) batch))]
+        (into-array Document (mapv #(document/->doc % field-names) batch))]
     (cond-> (match-batch monitor docs opts)
             (map? my-docs) (take-first-and-meta))))
