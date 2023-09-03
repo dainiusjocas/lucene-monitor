@@ -39,6 +39,6 @@
       (let [^String field-name (.next iterator)]
         (when (.startsWith field-name default-query-field)
           (.add doc (Field. field-name string field-type)))))
-    (when-not (contains? all-field-names default-query-field)
+    (when-not (.contains all-field-names default-query-field)
       (.add doc (Field. default-query-field string field-type)))
     doc))
