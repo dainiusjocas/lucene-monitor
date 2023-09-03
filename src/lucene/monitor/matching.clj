@@ -89,7 +89,8 @@
   Control this via flag in opts."
   [my-docs monitor field-names opts]
   (let [batch (if (sequential? my-docs) my-docs [my-docs])
+        arr (make-array Document (count batch))
         #^"[Lorg.apache.lucene.document.Document;" docs
-        (into-array Document (mapv #(document/->doc % field-names) batch))]
+        (amap #^"[Lorg.apache.lucene.document.Document;" arr idx ret ^Document (document/->doc (nth batch idx) field-names))]
     (cond-> (match-batch monitor docs opts)
             (map? my-docs) (take-first-and-meta))))
