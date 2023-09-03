@@ -85,7 +85,7 @@
          (let [match-options (if (and default-match-mode (nil? (:mode options)))
                                (assoc options :mode default-match-mode)
                                options)]
-           (matching/new-match docs monitor (keys field-name->lucene-analyzer) match-options)))
+           (matching/to-batch-and-match docs monitor (.keySet field-name->lucene-analyzer) match-options)))
        (get-query-count [_] (.getQueryCount monitor))
        (get-query [_ query-id]
          (queries/->conf (.getQuery monitor query-id)))

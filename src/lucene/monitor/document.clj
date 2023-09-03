@@ -1,12 +1,31 @@
 (ns lucene.monitor.document
-  (:import (java.util Iterator Set)
+  (:import (java.util Iterator Map Set)
            (org.apache.lucene.document Document Field FieldType)
            (org.apache.lucene.index IndexOptions)))
+
+(set! *warn-on-reflection* true)
 
 (def ^FieldType field-type
   (doto (FieldType.)
     (.setTokenized true)
     (.setIndexOptions IndexOptions/DOCS)))
+
+(defn add-field!
+  "Mutates the Document by adding field(s) to it."
+  [^Document doc ^String the-field-name ^String value ^Set all-field-names]
+  (let [^Iterator iterator (.iterator all-field-names)]
+    (while (.hasNext iterator)
+      (let [^String field-name (.next iterator)]
+        (when (.startsWith field-name the-field-name)
+          (.add doc (Field. field-name value field-type)))))
+    (when-not (.contains all-field-names the-field-name)
+      (.add doc (Field. the-field-name value field-type)))))
+
+(defn map->doc! [^Document doc ^Map m ^Set default-query-field-names]
+  (let [iterator (.iterator (.keySet m))]
+    (while (.hasNext iterator)
+      (let [field-name (.next iterator)]
+        (add-field! doc (name field-name) (get m field-name) default-query-field-names)))))
 
 (defn ->doc
   "For now only ths flat docs are supported.
@@ -15,30 +34,13 @@
   Multiple field interpretations are supported.
   When the key is a keyword, then only name part is used."
   ^Document [m default-query-field-names]
-  (let [doc (Document.)]
-    (doseq [field-name (keys m)]
-      (.add doc (Field. ^String (name field-name)
-                        ^String (get m field-name)
-                        field-type))
-      (doseq [final-field-name (filterv #(and (not= field-name %)
-                                              (.startsWith % (name field-name)))
-                                        default-query-field-names)]
-        (.add doc (Field. ^String (name final-field-name)
-                          ^String (get m field-name)
-                          field-type))))
-    doc))
+  (doto (Document.)
+    (map->doc! m default-query-field-names)))
 
 (defn string->doc
   "Specialized Lucene Document ctor from String.
   Adds field for the default query field of the monitor, and for all
   default fields collected from queries."
   ^Document [^String string ^String default-query-field ^Set all-field-names]
-  (let [doc (Document.)
-        ^Iterator iterator (.iterator all-field-names)]
-    (while (.hasNext iterator)
-      (let [^String field-name (.next iterator)]
-        (when (.startsWith field-name default-query-field)
-          (.add doc (Field. field-name string field-type)))))
-    (when-not (.contains all-field-names default-query-field)
-      (.add doc (Field. default-query-field string field-type)))
-    doc))
+  (doto (Document.)
+    (add-field! default-query-field string all-field-names)))

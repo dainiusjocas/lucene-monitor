@@ -1,7 +1,8 @@
 (ns lucene.monitor-test
   (:require [babashka.fs :as fs]
             [clojure.test :refer [deftest is testing use-fixtures]]
-            [lucene.monitor :as m]))
+            [lucene.monitor :as m])
+  (:import (java.util HashMap)))
 
 (deftest basics
   (testing "zero arg constructor"
@@ -44,6 +45,16 @@
                 [{:id "12"}]]
                (m/match monitor [{:text "foo text bar"}
                                  {:text "foo text bar"}] {})))))
+
+    (testing "doc as a java HashMap"
+      (with-open [monitor (m/monitor {} [{:id    "12"
+                                          :query "text"
+                                          :meta  {"a" "b"}}])]
+        (is (= [[{:id "12"}]]
+               (m/match monitor
+                        (doto (HashMap.) (.put :text "foo text bar"))
+                        {})))))
+
 
     (testing "removing queries one by one and in bulk"
       (with-open [monitor (m/monitor options [])]

@@ -6,7 +6,9 @@
         com.cnuernber/charred            {:mvn/version "1.032"}}
  :aliases
  {:dev   {:extra-paths ["dev"]
-          :extra-deps  {babashka/fs {:mvn/version "0.4.19"}}}
+          :extra-deps  {babashka/fs         {:mvn/version "0.4.19"}
+                        criterium/criterium {:mvn/version "0.4.6"}}}
+
   :test  {:extra-paths ["test"]
           :extra-deps  {babashka/fs {:mvn/version "0.4.19"}
                         io.github.cognitect-labs/test-runner

@@ -1,9 +1,12 @@
 (ns lucene.monitor.matching
   (:require [lucene.monitor.document :as document])
-  (:import (org.apache.lucene.monitor Monitor QueryMatch ScoringMatch
+  (:import (java.util Map Map$Entry)
+           (org.apache.lucene.monitor Monitor QueryMatch ScoringMatch
                                       HighlightsMatch HighlightsMatch$Hit
                                       MatchingQueries MultiMatchingQueries MatcherFactory)
            (org.apache.lucene.document Document)))
+
+(set! *warn-on-reflection* true)
 
 (defn id-fn [^QueryMatch query-match]
   {:id (.getQueryId query-match)})
@@ -15,7 +18,7 @@
 (defn highlights-fn [^HighlightsMatch query-match]
   {:id         (.getQueryId query-match)
    :highlights (reduce
-                 (fn [acc field-hits]
+                 (fn [acc ^Map$Entry field-hits]
                    (assoc acc
                      (.getKey field-hits)
                      (mapv (fn [^HighlightsMatch$Hit hit]
@@ -56,25 +59,27 @@
                :query-build-time-ns (.getQueryBuildTime mmqs)
                :errors              (.getErrors mmqs)}))))
 
-(defn match-batch [monitor #^"[Lorg.apache.lucene.document.Document;" docs opts]
+(defn match-batch [^Monitor monitor #^"[Lorg.apache.lucene.document.Document;" docs opts]
   (let [ndocs (alength docs)
         match-mode (:mode opts)
         ^MultiMatchingQueries mmqs (.match monitor docs (matcher opts))
         from-query-match-fn (get-fn opts)
         matches (loop [i 0 acc (transient [])]
                   (if (< i ndocs)
-                    (recur (inc i) (conj! acc (if (= :count match-mode)
-                                                (.getMatchCount mmqs i)
-                                                (mapv from-query-match-fn (.getMatches mmqs i)))))
+                    (recur (inc i)
+                           (conj! acc (if (= :count match-mode)
+                                        (.getMatchCount mmqs i)
+                                        (mapv from-query-match-fn (.getMatches mmqs i)))))
                     (persistent! acc)))]
     (cond-> matches
             (and (true? (:with-details opts))
-                 (not (= :count match-mode))) (with-meta
-                                                {:batch-size          (.getBatchSize mmqs)
-                                                 :queries-run         (.getQueriesRun mmqs)
-                                                 :search-time-ms      (.getSearchTime mmqs)
-                                                 :query-build-time-ns (.getQueryBuildTime mmqs)
-                                                 :errors              (.getErrors mmqs)}))))
+                 (not (= :count match-mode)))
+            (with-meta
+              {:batch-size          (.getBatchSize mmqs)
+               :queries-run         (.getQueriesRun mmqs)
+               :search-time-ms      (.getSearchTime mmqs)
+               :query-build-time-ns (.getQueryBuildTime mmqs)
+               :errors              (.getErrors mmqs)}))))
 
 (defn take-first-and-meta [matches]
   (let [first-match (first matches)]
@@ -82,12 +87,17 @@
       first-match
       (with-meta first-match (meta matches)))))
 
-(defn new-match
+(defn ->batch [docs field-names]
+  (if (instance? Map docs)
+    (doto #^"[Lorg.apache.lucene.document.Document;" (make-array Document 1)
+      (aset 0 (document/->doc docs field-names)))
+    (let [#^"[Lorg.apache.lucene.document.Document;" arr
+          (make-array Document (count docs))]
+      (amap arr idx _ ^Document (document/->doc (nth docs idx) field-names)))))
+
+(defn to-batch-and-match
   "We can also get the detailed match data, with timings and stuff.
   Control this via flag in opts."
   [my-docs monitor field-names opts]
-  (let [batch (if (map? my-docs) [my-docs] my-docs)
-        #^"[Lorg.apache.lucene.document.Document;" docs
-        (into-array Document (map #(document/->doc % field-names) batch))]
-    (cond-> (match-batch monitor docs opts)
-            (map? my-docs) (take-first-and-meta))))
+  (cond-> (match-batch monitor (->batch my-docs field-names) opts)
+          (map? my-docs) (take-first-and-meta)))
