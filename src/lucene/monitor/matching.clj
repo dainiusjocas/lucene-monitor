@@ -87,15 +87,17 @@
       first-match
       (with-meta first-match (meta matches)))))
 
-(defn new-match
+(defn ->batch [docs field-names]
+  (if (instance? Map docs)
+    (doto #^"[Lorg.apache.lucene.document.Document;" (make-array Document 1)
+      (aset 0 (document/->doc docs field-names)))
+    (let [#^"[Lorg.apache.lucene.document.Document;" arr
+          (make-array Document (count docs))]
+      (amap arr idx _ ^Document (document/->doc (nth docs idx) field-names)))))
+
+(defn to-batch-and-match
   "We can also get the detailed match data, with timings and stuff.
   Control this via flag in opts."
   [my-docs monitor field-names opts]
-  (let [batch (if (instance? Map my-docs)
-                (doto #^"[Lorg.apache.lucene.document.Document;" (make-array Document 1)
-                  (aset 0 (document/->doc my-docs field-names)))
-                (let [#^"[Lorg.apache.lucene.document.Document;" arr
-                      (make-array Document (count my-docs))]
-                  (amap arr idx _ ^Document (document/->doc (nth my-docs idx) field-names))))]
-    (cond-> (match-batch monitor batch opts)
-            (map? my-docs) (take-first-and-meta))))
+  (cond-> (match-batch monitor (->batch my-docs field-names) opts)
+          (map? my-docs) (take-first-and-meta)))
