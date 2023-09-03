@@ -8,6 +8,17 @@
     (.setTokenized true)
     (.setIndexOptions IndexOptions/DOCS)))
 
+(defn add-field!
+  "Mutates the Document by adding field(s) to it."
+  [^Document doc ^String field-name ^String value ^Set all-field-names]
+  (let [^Iterator iterator (.iterator all-field-names)]
+    (while (.hasNext iterator)
+      (let [^String field-name (.next iterator)]
+        (when (.startsWith field-name field-name)
+          (.add doc (Field. field-name value field-type)))))
+    (when-not (.contains all-field-names field-name)
+      (.add doc (Field. field-name value field-type)))))
+
 (defn ->doc
   "For now only ths flat docs are supported.
   Keys are treated as Lucene Document Field.
@@ -33,12 +44,5 @@
   Adds field for the default query field of the monitor, and for all
   default fields collected from queries."
   ^Document [^String string ^String default-query-field ^Set all-field-names]
-  (let [doc (Document.)
-        ^Iterator iterator (.iterator all-field-names)]
-    (while (.hasNext iterator)
-      (let [^String field-name (.next iterator)]
-        (when (.startsWith field-name default-query-field)
-          (.add doc (Field. field-name string field-type)))))
-    (when-not (.contains all-field-names default-query-field)
-      (.add doc (Field. default-query-field string field-type)))
-    doc))
+  (doto (Document.)
+    (add-field! default-query-field string all-field-names)))
