@@ -1,10 +1,12 @@
 (ns lucene.monitor.matching
   (:require [lucene.monitor.document :as document])
-  (:import (org.apache.lucene.monitor Monitor QueryMatch ScoringMatch
+  (:import (java.util Map$Entry)
+           (org.apache.lucene.monitor Monitor QueryMatch ScoringMatch
                                       HighlightsMatch HighlightsMatch$Hit
                                       MatchingQueries MultiMatchingQueries MatcherFactory)
            (org.apache.lucene.document Document)))
 
+(set! *warn-on-reflection* true)
 (defn id-fn [^QueryMatch query-match]
   {:id (.getQueryId query-match)})
 
@@ -15,7 +17,7 @@
 (defn highlights-fn [^HighlightsMatch query-match]
   {:id         (.getQueryId query-match)
    :highlights (reduce
-                 (fn [acc field-hits]
+                 (fn [acc ^Map$Entry field-hits]
                    (assoc acc
                      (.getKey field-hits)
                      (mapv (fn [^HighlightsMatch$Hit hit]
@@ -56,7 +58,7 @@
                :query-build-time-ns (.getQueryBuildTime mmqs)
                :errors              (.getErrors mmqs)}))))
 
-(defn match-batch [monitor #^"[Lorg.apache.lucene.document.Document;" docs opts]
+(defn match-batch [^Monitor monitor #^"[Lorg.apache.lucene.document.Document;" docs opts]
   (let [ndocs (alength docs)
         match-mode (:mode opts)
         ^MultiMatchingQueries mmqs (.match monitor docs (matcher opts))
