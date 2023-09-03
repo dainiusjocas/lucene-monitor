@@ -16,7 +16,7 @@
     Returns a vector (per input doc) of vectors (matches per doc)
     If one map, then wrap it into a vector and on return: a vector of matches.
     Depending on options, various details of match can be returned.")
-  (match-string [this string] [this string options] "Accepts strings.")
+  (match-string [this string] [this string options] "Accepts one string to be matched.")
   (get-query-cache-stats [this])
   (purge-cache [this])
   (register [this queries] [this queries opts]
@@ -71,17 +71,15 @@
          default-match-options {:mode default-match-mode}]
      (reify LuceneMonitor
        (match-string [this string] (match-string this string default-match-options))
-       (match-string [this string options]
-         (if (string? string)
-           (matching/match-single monitor
-                                  (document/string->doc
-                                    string
-                                    default-query-field
-                                    (.keySet field-name->lucene-analyzer))
-                                  (if (and default-match-mode (nil? (:mode options)))
-                                    (assoc options :mode default-match-mode)
-                                    options))
-           (match this {default-query-field string} options)))
+       (match-string [_ string options]
+         (matching/match-single monitor
+                                (document/string->doc
+                                  string
+                                  default-query-field
+                                  (.keySet field-name->lucene-analyzer))
+                                (if (and default-match-mode (nil? (:mode options)))
+                                  (assoc options :mode default-match-mode)
+                                  options)))
        (match [this docs] (match this docs default-match-options))
        (match [_ docs options]
          (let [match-options (if (and default-match-mode (nil? (:mode options)))
