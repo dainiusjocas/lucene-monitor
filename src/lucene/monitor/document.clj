@@ -1,5 +1,6 @@
 (ns lucene.monitor.document
-  (:import (java.util Iterator Set)
+  (:import (clojure.lang MapEntry)
+           (java.util Iterator Set)
            (org.apache.lucene.document Document Field FieldType)
            (org.apache.lucene.index IndexOptions)))
 
@@ -20,8 +21,10 @@
       (.add doc (Field. the-field-name value field-type)))))
 
 (defn map->doc! [^Document doc m ^Set default-query-field-names]
-  (doseq [field-name (keys m)]
-    (add-field! doc (name field-name) (get m field-name) default-query-field-names)))
+  (let [iterator (.iterator m)]
+    (while (.hasNext iterator)
+      (let [field-name (.key ^MapEntry (.next iterator))]
+        (add-field! doc (name field-name) (get m field-name) default-query-field-names)))))
 
 (defn ->doc
   "For now only ths flat docs are supported.
