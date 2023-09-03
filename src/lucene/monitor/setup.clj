@@ -50,7 +50,7 @@
       (transduce prepare-query-xf monitor-rf queries))
     (.register monitor ^Iterable (eduction prepare-query-xf queries))))
 
-(defn get-default-query-field [options]
+(defn get-default-query-field ^String [options]
   (name (:default-field options "text")))
 
 (defn or-default-analyzer [analyzer]

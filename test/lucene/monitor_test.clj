@@ -196,6 +196,10 @@
                                      :start-position 1}]}
                :id         "1"}] matches))))
 
+  (testing "match-string with query default field being specified"
+    (with-open [monitor (m/monitor {} [{:id "1" :query "test" :default-field "foo"}])]
+      (is (= [] (m/match-string monitor "prefix test suffix" {})))))
+
   (testing "default matching mode"
     (with-open [monitor (m/monitor {:default-match-mode :highlight} [{:id "1" :query "test"}])]
       (is (= [{:id         "1"
