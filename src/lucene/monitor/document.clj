@@ -1,8 +1,9 @@
 (ns lucene.monitor.document
-  (:import (clojure.lang MapEntry)
-           (java.util Iterator Set)
+  (:import (java.util Iterator Map Set)
            (org.apache.lucene.document Document Field FieldType)
            (org.apache.lucene.index IndexOptions)))
+
+(set! *warn-on-reflection* true)
 
 (def ^FieldType field-type
   (doto (FieldType.)
@@ -20,10 +21,10 @@
     (when-not (.contains all-field-names the-field-name)
       (.add doc (Field. the-field-name value field-type)))))
 
-(defn map->doc! [^Document doc m ^Set default-query-field-names]
-  (let [iterator (.iterator m)]
+(defn map->doc! [^Document doc ^Map m ^Set default-query-field-names]
+  (let [iterator (.iterator (.keySet m))]
     (while (.hasNext iterator)
-      (let [field-name (.key ^MapEntry (.next iterator))]
+      (let [field-name (.next iterator)]
         (add-field! doc (name field-name) (get m field-name) default-query-field-names)))))
 
 (defn ->doc

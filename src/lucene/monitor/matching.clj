@@ -86,7 +86,7 @@
   "We can also get the detailed match data, with timings and stuff.
   Control this via flag in opts."
   [my-docs monitor field-names opts]
-  (let [batch (if (map? my-docs) [my-docs] my-docs)
+  (let [batch (if (sequential? my-docs) my-docs [my-docs])
         #^"[Lorg.apache.lucene.document.Document;" docs
         (into-array Document (map #(document/->doc % field-names) batch))]
     (cond-> (match-batch monitor docs opts)
