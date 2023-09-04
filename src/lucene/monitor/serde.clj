@@ -5,4 +5,6 @@
   (charred/write-json-str o))
 
 (defn deserialize [o]
-  (charred/read-json o :key-fn keyword))
+  (charred/read-json o
+                     :key-fn keyword
+                     :profile :mutable))
