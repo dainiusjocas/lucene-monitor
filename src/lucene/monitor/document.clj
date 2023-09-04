@@ -1,5 +1,7 @@
 (ns lucene.monitor.document
-  (:import (java.util Iterator Map Set)
+  (:require [charred.api :as charred])
+  (:import (charred JSONReader$ObjReader)
+           (java.util Iterator Map Set)
            (org.apache.lucene.document Document Field FieldType)
            (org.apache.lucene.index IndexOptions)))
 
@@ -36,6 +38,33 @@
   ^Document [m default-query-field-names]
   (doto (Document.)
     (map->doc! m default-query-field-names)))
+
+(defn json->doc-fn [field-names]
+  (charred/parse-json-fn
+    {:obj-iface
+     (reify JSONReader$ObjReader
+       (newObj [_] (Document.))
+       (onKV [_ document k v]
+         (when (string? v)
+           (doto document (add-field! k v field-names))))
+       (finalizeObj [_ document] document))}))
+
+; This should be used as a transducer
+; The task is:
+; Read NDJSON file (or stdin)
+; transjuxt:
+;  {:identity (comp) ; here is a json string
+;   :monitor (comp (json->doc) (filter-xf))
+; (filter (< 0 (:monitor 0))
+; (map :identity)
+; what
+(defn- json->doc
+  "Given a string which is JSON, efficiently parses it to the Document"
+  ^Document [^String json default-field-names]
+  ((json->doc-fn default-field-names) json))
+
+(comment
+  (json->doc (charred/write-json-str {"text" "data"}) #{}))
 
 (defn string->doc
   "Specialized Lucene Document ctor from String.
