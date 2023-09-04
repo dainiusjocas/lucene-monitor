@@ -4,7 +4,10 @@
 (defn serialize ^String [o]
   (charred/write-json-str o))
 
+(def ^:private parse-json-fn
+  (charred/parse-json-fn
+    {:key-fn keyword
+     :profile :mutable}))
+
 (defn deserialize [o]
-  (charred/read-json o
-                     :key-fn keyword
-                     :profile :mutable))
+  (parse-json-fn o))
