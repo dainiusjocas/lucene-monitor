@@ -1,5 +1,5 @@
 (ns lucene.monitor.setup
-  (:require [lucene.custom.analyzer :as analyzer]
+  (:require [lucene.monitor.analyzer :as analyzer]
             [lucene.monitor.queries :as queries])
   (:import (java.nio.file Path)
            (java.util Map)

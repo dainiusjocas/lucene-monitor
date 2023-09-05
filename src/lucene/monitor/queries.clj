@@ -1,7 +1,7 @@
 (ns lucene.monitor.queries
   (:require [clojure.java.io :as io]
             [lucene.custom.query :as q]
-            [lucene.custom.analyzer :as a]
+            [lucene.monitor.analyzer :as a]
             [lucene.monitor.print :as print]
             [lucene.monitor.serde :as serde])
   (:import (java.util HashMap Map)

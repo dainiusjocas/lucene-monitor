@@ -5,7 +5,9 @@
   (charred/write-json-str o))
 
 (def ^:private parse-json-fn
-  (charred/parse-json-fn {:key-fn keyword}))
+  (charred/parse-json-fn
+    {:key-fn keyword
+     :profile :mutable}))
 
 (defn deserialize [o]
   (parse-json-fn o))
