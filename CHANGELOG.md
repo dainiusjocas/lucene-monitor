@@ -9,6 +9,7 @@ For a list of breaking changes, check [here](#breaking-changes).
 - String matching specialization #4
 - Optimize construction of a batch of documents for matching #5
 - Bump lt.jocas/lucene-custom-analyzer to 1.0.34
+- refactor: memoized analyzer construction (#9)
 
 ## 1.0.2 (2023-08-31)
 
