@@ -78,39 +78,32 @@
 
 (defn ->field [^String field-name value]
   (cond
-    (string? value)
-    (Field. field-name ^String value field-type)
+    (string? value) (Field. field-name ^String value field-type)
     :else (Field. field-name (str value) field-type)))
-
-(defn flatten-paths
-  ([m separator]
-   (flatten-paths m separator []))
-  ([m separator path]
-   (into []
-         (map (fn [kv]
-                (let [key (name (first kv))
-                      value (second kv)]
-                  (if (and (map? value) (not-empty value))
-                    ; go deeper
-                    (flatten-paths value separator (conj path key))
-                    ; make one flattened path
-                    (let [current-path (conj path key)
-                          ^String field-name (->> current-path (string/join separator))]
-                      (if (instance? List value)
-                        (mapv
-                          (fn [a]
-                            (if (map? a)
-                              (flatten-paths a separator current-path)
-                              (->field (->> current-path (string/join separator)) a)))
-                          value)
-                        (->field field-name value)))))))
-         m)))
 
 ; https://andersmurphy.com/2019/11/30/clojure-flattening-key-paths.html
 
-(defn nested->doc ^Document [m]
-  (reduce
-    (fn add-field-to-doc [^Document doc ^Field field]
-      (doto doc (.add field)))
-    (Document.)
-    (flatten (flatten-paths m "."))))
+
+(defn flatten-paths
+  ([m separator]
+   (flatten-paths m separator [] (Document.)))
+  ([m separator path ^Document document]
+   (doseq [kv m]
+     (let [key (name (first kv))
+           value (second kv)]
+       (if (and (map? value) (not-empty value))
+         ; go deeper
+         (flatten-paths value separator (conj path key) document)
+         ; make one flattened path
+         (let [current-path (conj path key)
+               ^String field-name (->> current-path (string/join separator))]
+           (if (instance? List value)
+             (doseq [list-item value]
+               (if (map? list-item)
+                 (flatten-paths list-item separator current-path document)
+                 (.add document (->field (->> current-path (string/join separator)) list-item))))
+             (.add document (->field field-name value)))))))
+   document))
+
+(defn nested->doc [m]
+  (flatten-paths m "." [] (Document.)))
