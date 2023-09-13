@@ -1,7 +1,8 @@
 (ns lucene.monitor.document
-  (:require [charred.api :as charred])
+  (:require [charred.api :as charred]
+            [clojure.string :as string])
   (:import (charred JSONReader$ObjReader)
-           (java.util Iterator Map Set)
+           (java.util Iterator List Map Set)
            (org.apache.lucene.document Document Field FieldType)
            (org.apache.lucene.index IndexOptions)))
 
@@ -64,7 +65,8 @@
   ((json->doc-fn default-field-names) json))
 
 (comment
-  (json->doc (charred/write-json-str {"text" "data"}) #{}))
+  (json->doc (charred/write-json-str {"text" "data"}) #{})
+  (json->doc (charred/write-json-str {"text" "a" "q" {"data" "foo"}}) #{}))
 
 (defn string->doc
   "Specialized Lucene Document ctor from String.
@@ -73,3 +75,42 @@
   ^Document [^String string ^String default-query-field ^Set all-field-names]
   (doto (Document.)
     (add-field! default-query-field string all-field-names)))
+
+(defn ->field [^String field-name value]
+  (cond
+    (string? value)
+    (Field. field-name ^String value field-type)
+    :else (Field. field-name (str value) field-type)))
+
+(defn flatten-paths
+  ([m separator]
+   (flatten-paths m separator []))
+  ([m separator path]
+   (into []
+         (map (fn [kv]
+                (let [key (name (first kv))
+                      value (second kv)]
+                  (if (and (map? value) (not-empty value))
+                    ; go deeper
+                    (flatten-paths value separator (conj path key))
+                    ; make one flattened path
+                    (let [current-path (conj path key)
+                          ^String field-name (->> current-path (string/join separator))]
+                      (if (instance? List value)
+                        (mapv
+                          (fn [a]
+                            (if (map? a)
+                              (flatten-paths a separator current-path)
+                              (->field (->> current-path (string/join separator)) a)))
+                          value)
+                        (->field field-name value)))))))
+         m)))
+
+; https://andersmurphy.com/2019/11/30/clojure-flattening-key-paths.html
+
+(defn nested->doc ^Document [m]
+  (reduce
+    (fn add-field-to-doc [^Document doc ^Field field]
+      (doto doc (.add field)))
+    (Document.)
+    (flatten (flatten-paths m "."))))
