@@ -27,9 +27,9 @@
 (defn ->maintain-mapping-fn
   "Returns a single arg function that wraps over a mutable Map of field->analyzer mapping.
   When called and if field is missing creates an analyzer."
-  [^Map field-name->lucene-analyzer]
+  [^Map field->analyzer]
   (fn add-when-missing! [query]
-    (.computeIfAbsent field-name->lucene-analyzer
+    (.computeIfAbsent field->analyzer
                       (:default-field query)
                       (reify Function (apply [_ _] (analyzer/create (:analyzer query)))))))
 
@@ -82,10 +82,10 @@
 (defn monitor
   "Creates a Monitor object.
   If :index-path is specified then loads field->Analyzer from the index."
-  [options default-query-analyzer field-name->lucene-analyzer maintain-field->analyzer-fn]
+  [options default-query-analyzer field->analyzer maintain-field->analyzer-fn]
   (let [default-field-analyzer (or-default-analyzer (:default-field-analyzer options))]
-    (Monitor. (PerFieldAnalyzerWrapper. default-field-analyzer
-                                        field-name->lucene-analyzer)
+    (Monitor. (analyzer/->per-field-analyzer-wrapper default-field-analyzer
+                                                     field->analyzer)
               (presearcher (:presearcher options))
               (monitor-configuration options
                                      default-query-analyzer
