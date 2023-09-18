@@ -156,32 +156,27 @@
                              {:id "2" :query "test"}] {:batch-size 1})))))
 
 (deftest schema-support
-  ; Monitor has schema for one field
-  ; Schema is only for fields
-  ; This field is indexed with tokens reversed
-  ; query whose tokens are not reversed should not match
-  ; query whose tokens are reversed should match
-
   (testing "field analyzer from schema must match query analyzer"
     (let [query-string "test"
-          reversing-analyzer {:analyzer {:token-filters [:reverseString]}}
-          opts {:default-field :my-field-name
-                :schema        {:my-field-name reversing-analyzer}}
-          queries [{:id    "1"
-                    :query query-string}
+          query-parser-conf {:analyzer {:token-filters [:reverseString]}}
+          monitor-opts {:default-field :my-field-name
+                        :schema        {:my-field-name query-parser-conf}}
+          queries [{:id            "1"
+                    :query         query-string
+                    :default-field :some-other-field}
                    {:id           "2"
                     :query        query-string
-                    :query-parser reversing-analyzer}]
+                    :query-parser query-parser-conf}]
           doc {:my-field-name "prefix test suffix"}]
-      (with-open [monitor (m/monitor opts queries)]
+      (with-open [monitor (m/monitor monitor-opts queries)]
         (is (= [{:id "2"}] (m/match monitor doc {}))))))
 
-  (testing "multifield query case"
+  (testing "multi-field query case"
     (let [query-string "field-a:foo AND field-b:bar"
           reversing-analyzer {:analyzer {:token-filters [:reverseString]}}
-          opts {:default-field "text"
-                :schema        {:field-a reversing-analyzer
-                                :field-b reversing-analyzer}}
+          monitor-opts {:default-field "text"
+                        :schema        {:field-a reversing-analyzer
+                                        :field-b reversing-analyzer}}
           queries [{:id           "1"
                     :query        query-string
                     :query-parser {}}
@@ -190,8 +185,8 @@
                     :query-parser reversing-analyzer}]
           doc {:field-a "prefix foo suffix"
                :field-b "prefix bar suffix"}]
-      (with-open [monitor (m/monitor opts queries)]
-        (is (= [{:id "2"}] (m/match monitor doc {})))))))
+      (with-open [monitor (m/monitor monitor-opts queries)]
+        (is (= [{:id "1"} {:id "2"}] (m/match monitor doc {})))))))
 
 (deftest matching-mode
   (with-open [monitor (m/monitor {} [{:id "1" :query "test"}])]

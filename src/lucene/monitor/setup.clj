@@ -5,7 +5,6 @@
            (java.util Map)
            (java.util.concurrent ConcurrentHashMap)
            (java.util.function Function)
-           (org.apache.lucene.analysis.miscellaneous PerFieldAnalyzerWrapper)
            (org.apache.lucene.analysis.standard StandardAnalyzer)
            (org.apache.lucene.monitor Monitor MonitorConfiguration MonitorQuerySerializer
                                       MultipassTermFilteredPresearcher Presearcher
@@ -26,12 +25,14 @@
 
 (defn ->maintain-mapping-fn
   "Returns a single arg function that wraps over a mutable Map of field->analyzer mapping.
-  When called and if field is missing creates an analyzer."
+  When called the fn checks if field is missing, then creates an analyzer, adds it to the
+  mapping, and returns the (mutable!) mapping."
   [^Map field->analyzer]
   (fn add-when-missing! [query]
-    (.computeIfAbsent field->analyzer
-                      (:default-field query)
-                      (reify Function (apply [_ _] (analyzer/create (:analyzer query)))))))
+    (doto field->analyzer
+      (.computeIfAbsent
+        (:default-field query)
+        (reify Function (apply [_ _] (analyzer/create (:analyzer query))))))))
 
 (def DEFAULT_ANALYZER (StandardAnalyzer.))
 

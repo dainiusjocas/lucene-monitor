@@ -41,16 +41,15 @@
    (try
      (let [query-parser-name (get query-parser :name)
            ; in case query should be analyzer in different way than field text
-           query-analyzer (if-let [analyzer-conf (or (:analyzer query-parser) analyzer)]
-                            (a/create analyzer-conf)
-                            default-query-analyzer)
-           lucene-query (q/parse query query-parser-name query-parser default-field query-analyzer)
-           monitor-query (MonitorQuery. ^String id
-                                        ^Query lucene-query
-                                        ^String query
-                                        (doto (prepare-meta meta) (.put CONF_KEY (serde/serialize mq))))]
-       (callback mq)
-       monitor-query)
+           query-analyzer (a/->per-field-analyzer-wrapper
+                            (if-let [analyzer-conf (or (:analyzer query-parser) analyzer)]
+                              (a/create analyzer-conf)
+                              default-query-analyzer)
+                            (callback mq))]
+       (MonitorQuery. ^String id
+                      ^Query (q/parse query query-parser-name query-parser default-field query-analyzer)
+                      ^String query
+                      (doto (prepare-meta meta) (.put CONF_KEY (serde/serialize mq)))))
      (catch ParseException e
        (when (System/getenv "DEBUG_MODE")
          (print/to-err (format "Failed to parse query: '%s' with exception '%s'" mq e))
