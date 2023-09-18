@@ -1,5 +1,6 @@
 (ns lucene.monitor.document
-  (:import (java.util Iterator Map Set)
+  (:require [clojure.string :as string])
+  (:import (java.util Iterator List Map Map$Entry Set)
            (org.apache.lucene.document Document Field FieldType)
            (org.apache.lucene.index IndexOptions)))
 
@@ -10,32 +11,52 @@
     (.setTokenized true)
     (.setIndexOptions IndexOptions/DOCS)))
 
-(defn add-field!
+(defn- ->field
+  "Creates Field object. If value is not a String then stringifies it."
+  [^String field-name value]
+  (cond
+    (string? value) (Field. field-name ^String value field-type)
+    :else (Field. field-name (str value) field-type)))
+
+(defn- add-field!
   "Mutates the Document by adding field(s) to it."
-  [^Document doc ^String the-field-name ^String value ^Set all-field-names]
+  [^Document doc ^String the-field-name value ^Set all-field-names]
   (let [^Iterator iterator (.iterator all-field-names)]
     (while (.hasNext iterator)
       (let [^String field-name (.next iterator)]
         (when (.startsWith field-name the-field-name)
-          (.add doc (Field. field-name value field-type)))))
+          (.add doc (->field field-name value)))))
     (when-not (.contains all-field-names the-field-name)
-      (.add doc (Field. the-field-name value field-type)))))
+      (.add doc (->field the-field-name value)))))
 
-(defn map->doc! [^Document doc ^Map m ^Set default-query-field-names]
-  (let [iterator (.iterator (.keySet m))]
-    (while (.hasNext iterator)
-      (let [field-name (.next iterator)]
-        (add-field! doc (name field-name) (get m field-name) default-query-field-names)))))
+(defn- ->field-name [current-path separator]
+  (->> current-path (string/join separator)))
+
+(defn- flatten-paths
+  [^Document document ^Map m separator path field-names]
+  (doseq [^Map$Entry kv (.entrySet m)]
+    (let [key (name (.getKey kv))
+          value (.getValue kv)
+          current-path (conj path key)]
+      (cond
+        (and (instance? Map value) (not-empty value))
+        (flatten-paths document value separator current-path field-names)
+        (instance? List value)
+        (doseq [list-item value]
+          (if (instance? Map list-item)
+            (flatten-paths document list-item separator current-path field-names)
+            (add-field! document (->field-name current-path separator) list-item field-names)))
+        :else
+        (add-field! document (->field-name current-path separator) value field-names)))))
 
 (defn ->doc
-  "For now only ths flat docs are supported.
-  Keys are treated as Lucene Document Field.
+  "Converts a (nested) Map into a Lucene Document.
+  A joined sequence of keys is treated as Lucene Document Field name.
   Values can only be String.
   Multiple field interpretations are supported.
   When the key is a keyword, then only name part is used."
-  ^Document [m default-query-field-names]
-  (doto (Document.)
-    (map->doc! m default-query-field-names)))
+  [m default-query-field-names]
+  (doto (Document.) (flatten-paths m "." [] default-query-field-names)))
 
 (defn string->doc
   "Specialized Lucene Document ctor from String.
