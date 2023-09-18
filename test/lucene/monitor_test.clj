@@ -130,7 +130,7 @@
               resp-with-details (m/match monitor
                                          {:text "foo text bar"}
                                          {:with-details true
-                                          :mode :count})]
+                                          :mode         :count})]
           (is (= [{:id "12"}] resp))
           (is (empty? (meta resp)))
           (is (= 1 resp-with-details))
@@ -229,7 +229,17 @@
                                      :start-offset   7
                                      :start-position 1}]}
                :id         "1"}]
-             (m/match-string monitor "prefix my test suffix" {:mode :highlight}))))))
+             (m/match-string monitor "prefix my test suffix" {:mode :highlight})))))
+
+  (testing "explaining match"
+    (with-open [monitor (m/monitor {} [{:id "1" :query "\"my test\""}])]
+      (is (= [] (m/match-string monitor "prefix test suffix")))
+      (let [matches (m/match-string monitor "prefix my test suffix" {:mode :explain})]
+        (is (= 1 (count matches)))
+        (is (= [:id :matched :explanation]
+               (keys (first matches))))
+        (is (= [:value :description :details]
+               (keys (:explanation (first matches)))))))))
 
 (def dir "target/fs-support-test6")
 

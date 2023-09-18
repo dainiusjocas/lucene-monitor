@@ -1,10 +1,11 @@
 (ns lucene.monitor.matching
   (:require [lucene.monitor.document :as document])
   (:import (java.util Map Map$Entry)
-           (org.apache.lucene.monitor Monitor QueryMatch ScoringMatch
+           (org.apache.lucene.monitor ExplainingMatch Monitor QueryMatch ScoringMatch
                                       HighlightsMatch HighlightsMatch$Hit
                                       MatchingQueries MultiMatchingQueries MatcherFactory)
-           (org.apache.lucene.document Document)))
+           (org.apache.lucene.document Document)
+           (org.apache.lucene.search Explanation)))
 
 (set! *warn-on-reflection* true)
 
@@ -29,11 +30,23 @@
                            (.getValue field-hits))))
                  {} (.getHits query-match))})
 
+(defn- ->explanation [^Explanation explanation]
+  {:value       (.getValue explanation)
+   :description (.getDescription explanation)
+   :details     (mapv ->explanation (.getDetails explanation))})
+
+(defn explain-fn [^ExplainingMatch query-match]
+  (let [explanation (.getExplanation query-match)]
+    {:id          (.getQueryId query-match)
+     :matched     (.isMatch explanation)
+     :explanation (->explanation explanation)}))
+
 (defn get-fn [options]
   (case (keyword (:mode options))
     :id id-fn
     :score score-fn
     :highlight highlights-fn
+    :explain explain-fn
     id-fn))
 
 (defn matcher ^MatcherFactory [options]
@@ -41,6 +54,7 @@
     :id (QueryMatch/SIMPLE_MATCHER)
     :score (ScoringMatch/DEFAULT_MATCHER)
     :highlight (HighlightsMatch/MATCHER)
+    :explain (ExplainingMatch/MATCHER)
     (QueryMatch/SIMPLE_MATCHER)))
 
 (defn match-single [^Monitor monitor ^Document document opts]
