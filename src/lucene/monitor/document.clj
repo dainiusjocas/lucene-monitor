@@ -2,7 +2,7 @@
   (:require [charred.api :as charred]
             [clojure.string :as string])
   (:import (charred JSONReader$ObjReader)
-           (java.util Iterator List Map Set)
+           (java.util Iterator List Map Map$Entry Set)
            (org.apache.lucene.document Document Field FieldType)
            (org.apache.lucene.index IndexOptions)))
 
@@ -83,27 +83,22 @@
 
 ; https://andersmurphy.com/2019/11/30/clojure-flattening-key-paths.html
 
-
-(defn flatten-paths
-  ([m separator]
-   (flatten-paths m separator [] (Document.)))
-  ([m separator path ^Document document]
-   (doseq [kv m]
-     (let [key (name (first kv))
-           value (second kv)]
-       (if (and (map? value) (not-empty value))
-         ; go deeper
-         (flatten-paths value separator (conj path key) document)
-         ; make one flattened path
-         (let [current-path (conj path key)
-               ^String field-name (->> current-path (string/join separator))]
-           (if (instance? List value)
-             (doseq [list-item value]
-               (if (map? list-item)
-                 (flatten-paths list-item separator current-path document)
-                 (.add document (->field (->> current-path (string/join separator)) list-item))))
-             (.add document (->field field-name value)))))))
-   document))
+(defn- flatten-paths
+  [^Document document ^Map m separator path]
+  (doseq [^Map$Entry kv (.entrySet m)]
+    (let [key (name (.getKey kv))
+          value (.getValue kv)
+          current-path (conj path key)]
+      (cond
+        (and (instance? Map value) (not-empty value))
+        (flatten-paths document value separator (conj path key))
+        (instance? List value)
+        (doseq [list-item value]
+          (if (instance? Map list-item)
+            (flatten-paths document list-item separator current-path)
+            (.add document (->field (->> current-path (string/join separator)) list-item))))
+        :else
+        (.add document (->field ^String (->> current-path (string/join separator)) value))))))
 
 (defn nested->doc [m]
-  (flatten-paths m "." [] (Document.)))
+  (doto (Document.) (flatten-paths m "." [])))

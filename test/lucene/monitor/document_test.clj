@@ -1,12 +1,11 @@
 (ns lucene.monitor.document-test
   (:require [clojure.test :refer [deftest is testing]]
             [lucene.monitor.document :as doc])
-  (:import (org.apache.lucene.document Document Field)))
-
+  (:import (java.util HashMap)
+           (org.apache.lucene.document Document Field)))
 
 (defn get-field-names [^Document d]
   (mapv #(.name ^Field %) (.getFields d)))
-
 
 (deftest map->doc
   (let [m {:a {:b {:c "d"}}}
@@ -39,4 +38,9 @@
               "array.a"]
              (get-field-names d)))
       (is (= 2 (count (.getFields d "array.a"))))
-      (is (= ["aa" "aaa"] (mapv #(.stringValue %) (.getFields d "array.a")))))))
+      (is (= ["aa" "aaa"] (mapv #(.stringValue %) (.getFields d "array.a"))))))
+
+  (testing "Java mutable map"
+    (let [m (doto (HashMap.) (.put "foo" "bar"))
+          d (doc/nested->doc m)]
+      (is (= ["foo"] (get-field-names d))))))
