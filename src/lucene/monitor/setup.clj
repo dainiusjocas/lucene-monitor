@@ -5,7 +5,6 @@
            (java.util Map)
            (java.util.concurrent ConcurrentHashMap)
            (java.util.function Function)
-           (org.apache.lucene.analysis.miscellaneous PerFieldAnalyzerWrapper)
            (org.apache.lucene.analysis.standard StandardAnalyzer)
            (org.apache.lucene.monitor Monitor MonitorConfiguration MonitorQuerySerializer
                                       MultipassTermFilteredPresearcher Presearcher
@@ -16,8 +15,7 @@
 (set! *warn-on-reflection* true)
 
 (defn init-analyzer-mapping!
-  "Creates field analyzers from the schema.
-  Makes sure the schema file exists, and if already exists then loads mapping."
+  "Creates field analyzers from the schema."
   [options]
   (let [field->analyzer (ConcurrentHashMap.)]
     (when-let [schema (:schema options)]
@@ -27,12 +25,14 @@
 
 (defn ->maintain-mapping-fn
   "Returns a single arg function that wraps over a mutable Map of field->analyzer mapping.
-  When called and if field is missing creates an analyzer."
-  [^Map field-name->lucene-analyzer]
+  When called the fn checks if field is missing, then creates an analyzer, adds it to the
+  mapping, and returns the (mutable!) mapping."
+  [^Map field->analyzer]
   (fn add-when-missing! [query]
-    (.computeIfAbsent field-name->lucene-analyzer
-                      (:default-field query)
-                      (reify Function (apply [_ _] (analyzer/create (:analyzer query)))))))
+    (doto field->analyzer
+      (.computeIfAbsent
+        (:default-field query)
+        (reify Function (apply [_ _] (analyzer/create (:analyzer query))))))))
 
 (def DEFAULT_ANALYZER (StandardAnalyzer.))
 
@@ -83,10 +83,10 @@
 (defn monitor
   "Creates a Monitor object.
   If :index-path is specified then loads field->Analyzer from the index."
-  [options default-query-analyzer field-name->lucene-analyzer maintain-field->analyzer-fn]
+  [options default-query-analyzer field->analyzer maintain-field->analyzer-fn]
   (let [default-field-analyzer (or-default-analyzer (:default-field-analyzer options))]
-    (Monitor. (PerFieldAnalyzerWrapper. default-field-analyzer
-                                        field-name->lucene-analyzer)
+    (Monitor. (analyzer/->per-field-analyzer-wrapper default-field-analyzer
+                                                     field->analyzer)
               (presearcher (:presearcher options))
               (monitor-configuration options
                                      default-query-analyzer
