@@ -16,8 +16,7 @@
 (set! *warn-on-reflection* true)
 
 (defn init-analyzer-mapping!
-  "Creates field analyzers from the schema.
-  Makes sure the schema file exists, and if already exists then loads mapping."
+  "Creates field analyzers from the schema."
   [options]
   (let [field->analyzer (ConcurrentHashMap.)]
     (when-let [schema (:schema options)]
