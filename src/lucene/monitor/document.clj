@@ -1,8 +1,6 @@
 (ns lucene.monitor.document
-  (:require [charred.api :as charred]
-            [clojure.string :as string])
-  (:import (charred JSONReader$ObjReader)
-           (java.util Iterator List Map Map$Entry Set)
+  (:require [clojure.string :as string])
+  (:import (java.util Iterator List Map Map$Entry Set)
            (org.apache.lucene.document Document Field FieldType)
            (org.apache.lucene.index IndexOptions)))
 
@@ -13,12 +11,14 @@
     (.setTokenized true)
     (.setIndexOptions IndexOptions/DOCS)))
 
-(defn ->field [^String field-name value]
+(defn- ->field
+  "Creates Field object. If value is not a String then stringifies it."
+  [^String field-name value]
   (cond
     (string? value) (Field. field-name ^String value field-type)
     :else (Field. field-name (str value) field-type)))
 
-(defn add-field!
+(defn- add-field!
   "Mutates the Document by adding field(s) to it."
   [^Document doc ^String the-field-name value ^Set all-field-names]
   (let [^Iterator iterator (.iterator all-field-names)]
@@ -28,60 +28,6 @@
           (.add doc (->field field-name value)))))
     (when-not (.contains all-field-names the-field-name)
       (.add doc (->field the-field-name value)))))
-
-(defn map->doc! [^Document doc ^Map m ^Set default-query-field-names]
-  (let [iterator (.iterator (.keySet m))]
-    (while (.hasNext iterator)
-      (let [field-name (.next iterator)]
-        (add-field! doc (name field-name) (get m field-name) default-query-field-names)))))
-
-(defn ->doc
-  "For now only ths flat docs are supported.
-  Keys are treated as Lucene Document Field.
-  Values can only be String.
-  Multiple field interpretations are supported.
-  When the key is a keyword, then only name part is used."
-  ^Document [m default-query-field-names]
-  (doto (Document.)
-    (map->doc! m default-query-field-names)))
-
-(defn json->doc-fn [field-names]
-  (charred/parse-json-fn
-    {:obj-iface
-     (reify JSONReader$ObjReader
-       (newObj [_] (Document.))
-       (onKV [_ document k v]
-         (when (string? v)
-           (doto document (add-field! k v field-names))))
-       (finalizeObj [_ document] document))}))
-
-; This should be used as a transducer
-; The task is:
-; Read NDJSON file (or stdin)
-; transjuxt:
-;  {:identity (comp) ; here is a json string
-;   :monitor (comp (json->doc) (filter-xf))
-; (filter (< 0 (:monitor 0))
-; (map :identity)
-; what
-(defn- json->doc
-  "Given a string which is JSON, efficiently parses it to the Document"
-  ^Document [^String json default-field-names]
-  ((json->doc-fn default-field-names) json))
-
-(comment
-  (json->doc (charred/write-json-str {"text" "data"}) #{})
-  (json->doc (charred/write-json-str {"text" "a" "q" {"data" "foo"}}) #{}))
-
-(defn string->doc
-  "Specialized Lucene Document ctor from String.
-  Adds field for the default query field of the monitor, and for all
-  default fields collected from queries."
-  ^Document [^String string ^String default-query-field ^Set all-field-names]
-  (doto (Document.)
-    (add-field! default-query-field string all-field-names)))
-
-; https://andersmurphy.com/2019/11/30/clojure-flattening-key-paths.html
 
 (defn- ->field-name [current-path separator]
   (->> current-path (string/join separator)))
@@ -103,5 +49,19 @@
         :else
         (add-field! document (->field-name current-path separator) value field-names)))))
 
-(defn nested->doc [m default-query-field-names]
+(defn ->doc
+  "Converts a (nested) Map into a Lucene Document.
+  A joined sequence of keys is treated as Lucene Document Field name.
+  Values can only be String.
+  Multiple field interpretations are supported.
+  When the key is a keyword, then only name part is used."
+  [m default-query-field-names]
   (doto (Document.) (flatten-paths m "." [] default-query-field-names)))
+
+(defn string->doc
+  "Specialized Lucene Document ctor from String.
+  Adds field for the default query field of the monitor, and for all
+  default fields collected from queries."
+  ^Document [^String string ^String default-query-field ^Set all-field-names]
+  (doto (Document.)
+    (add-field! default-query-field string all-field-names)))
