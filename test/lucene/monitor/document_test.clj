@@ -41,6 +41,12 @@
       (is (= 2 (count (.getFields d "array.a"))))
       (is (= ["aa" "aaa"] (mapv #(.stringValue %) (.getFields d "array.a"))))))
 
+  (testing "nested vectors"
+    (let [m {:vector [["aaa"]]}
+          d (doc/->doc m default-query-field-names)]
+      (is (= ["vector"] (get-field-names d)))
+      (is (= ["[\"aaa\"]"] (mapv #(.stringValue %) (.getFields d "vector"))))))
+
   (testing "Java mutable map"
     (let [m (doto (HashMap.) (.put "foo" "bar"))
           d (doc/->doc m default-query-field-names)]
