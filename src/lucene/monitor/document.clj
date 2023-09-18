@@ -91,14 +91,14 @@
           current-path (conj path key)]
       (cond
         (and (instance? Map value) (not-empty value))
-        (flatten-paths document value separator (conj path key))
+        (flatten-paths document value separator current-path)
         (instance? List value)
         (doseq [list-item value]
           (if (instance? Map list-item)
             (flatten-paths document list-item separator current-path)
             (.add document (->field (->> current-path (string/join separator)) list-item))))
         :else
-        (.add document (->field ^String (->> current-path (string/join separator)) value))))))
+        (.add document (->field (->> current-path (string/join separator)) value))))))
 
 (defn nested->doc [m]
   (doto (Document.) (flatten-paths m "." [])))
