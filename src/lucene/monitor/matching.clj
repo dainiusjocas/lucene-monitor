@@ -1,7 +1,7 @@
 (ns lucene.monitor.matching
   (:require [lucene.monitor.document :as document])
   (:import (java.util Map Map$Entry)
-           (org.apache.lucene.monitor ExplainingMatch Monitor QueryMatch ScoringMatch
+           (org.apache.lucene.monitor ExplainingMatch Monitor PresearcherMatch PresearcherMatches QueryMatch ScoringMatch
                                       HighlightsMatch HighlightsMatch$Hit
                                       MatchingQueries MultiMatchingQueries MatcherFactory)
            (org.apache.lucene.document Document)
@@ -115,3 +115,29 @@
   [my-docs monitor field-names opts]
   (cond-> (match-batch monitor (->batch my-docs field-names) opts)
           (map? my-docs) (take-first-and-meta)))
+
+(defn debug [doc ^Monitor monitor field-names options]
+  (let [^MatcherFactory matcher (matcher options)
+        from-query-match-fn (get-fn options)
+        #^"[Lorg.apache.lucene.document.Document;" batch (->batch doc field-names)
+        ndocs (alength batch)
+        ^PresearcherMatches presearcher-matches (.debug monitor batch matcher)
+        ^MultiMatchingQueries matching-queries (.-matcher presearcher-matches)
+        matches (loop [i 0 acc (transient [])]
+                  (if (< i ndocs)
+                    (recur
+                      (inc i)
+                      (conj! acc (mapv (fn [^QueryMatch query-match]
+                                         (assoc (from-query-match-fn query-match)
+                                           :presearcher-matches
+                                           (.-presearcherMatches
+                                             (.match presearcher-matches
+                                                     (.getQueryId query-match) i))))
+                                       (.getMatches matching-queries i))))
+                    (persistent! acc)))]
+    (with-meta matches
+               {:batch-size          (.getBatchSize matching-queries)
+                :queries-run         (.getQueriesRun matching-queries)
+                :search-time-ms      (.getSearchTime matching-queries)
+                :query-build-time-ns (.getQueryBuildTime matching-queries)
+                :errors              (.getErrors matching-queries)})))

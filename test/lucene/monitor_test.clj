@@ -282,3 +282,15 @@
       (with-open [monitor (m/monitor options)]
         (is (= [{:id "1"}] (m/match monitor doc)))
         (is (= 1 (m/get-query-count monitor)))))))
+
+(deftest debug-matching
+  (let [docs [{:foo "prefix test suffix foo"}]
+        options {:presearcher :term-filtered}]
+    (with-open [monitor (m/monitor options)]
+      (m/register monitor [{:id            "1"
+                            :query         "test prefix foo:bar"
+                            :default-field "foo"}])
+      (let [matches (m/debug monitor docs options)]
+        (is (= [[{:id                  "1"
+                  :presearcher-matches " foo:test foo:prefix"}]] matches))))))
+
