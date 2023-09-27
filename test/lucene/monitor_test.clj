@@ -288,12 +288,12 @@
         options {:presearcher :term-filtered}]
     (with-open [monitor (m/monitor options)]
       (m/register monitor [{:id            "1"
-                            :query         "foo:test prefix foo:bar"
+                            :query         "foo:test foo:bar"
                             :default-field "foo"}])
       (testing "if presearcher matches are returned"
         (let [matches (m/debug monitor docs options)]
           (is (= [[{:id                  "1"
-                    :presearcher-matches " foo:prefix foo:test"}]] matches))))
+                    :presearcher-matches " foo:test"}]] matches))))
       (testing "matching mode is handled"
         (let [matches (m/debug monitor docs (assoc options :mode :score))]
           (is (= 1 (count (first matches))))
