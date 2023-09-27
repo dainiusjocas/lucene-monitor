@@ -290,6 +290,14 @@
       (m/register monitor [{:id            "1"
                             :query         "foo:test prefix foo:bar"
                             :default-field "foo"}])
-      (let [matches (m/debug monitor docs options)]
-        (is (= [[{:id                  "1"
-                  :presearcher-matches " foo:prefix foo:test"}]] matches))))))
+      (testing "if presearcher matches are returned"
+        (let [matches (m/debug monitor docs options)]
+          (is (= [[{:id                  "1"
+                    :presearcher-matches " foo:prefix foo:test"}]] matches))))
+      (testing "matching mode is handled"
+        (let [matches (m/debug monitor docs (assoc options :mode :score))]
+          (is (= 1 (count (first matches))))
+          (is (= '(:id
+                    :score
+                    :presearcher-matches)
+                 (keys (ffirst matches)))))))))
