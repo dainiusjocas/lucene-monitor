@@ -1,7 +1,7 @@
 (ns lucene.monitor.matching
   (:require [lucene.monitor.document :as document])
   (:import (java.util Map Map$Entry)
-           (org.apache.lucene.monitor ExplainingMatch Monitor PresearcherMatch PresearcherMatches QueryMatch ScoringMatch
+           (org.apache.lucene.monitor ExplainingMatch Monitor PresearcherMatches QueryMatch ScoringMatch
                                       HighlightsMatch HighlightsMatch$Hit
                                       MatchingQueries MultiMatchingQueries MatcherFactory)
            (org.apache.lucene.document Document)
