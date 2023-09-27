@@ -36,8 +36,10 @@
   (clear [this]
     "Delete all queries from the monitor.
     Resets the field-name analyzer mappings.")
-  ; TODO: implement support for debugging
-  #_(debug [this doc] [this doc options]))
+  (debug [this docs] [this docs options]
+    "Matches a batch of docs and also returns information about which queries were
+    selected by the presearcher, and why.
+    Only makes sense when presearcher is used."))
 
 (defn monitor
   "Params:
@@ -109,6 +111,9 @@
          (.clear monitor))
        (get-disjunct-count [_] (.getDisjunctCount monitor))
        (get-query-ids [_] (.getQueryIds monitor))
+       (debug [this docs] (debug this docs {}))
+       (debug [_ docs options]
+         (matching/debug docs monitor (.keySet field-name->lucene-analyzer) options))
        Closeable
        (close [_] (.close monitor)))))
   ([options queries]

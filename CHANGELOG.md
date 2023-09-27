@@ -13,6 +13,7 @@ For a list of breaking changes, check [here](#breaking-changes).
 - feat: support for nested documents (#10)
 - feat: match mode `:explain` to explain the match score #11
 - Query parser uses `PerFieldAnalyzerWrapper` #12
+- feat: debug function #13 
 
 ## 1.0.2 (2023-08-31)
 

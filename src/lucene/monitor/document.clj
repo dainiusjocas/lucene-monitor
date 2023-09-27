@@ -55,7 +55,7 @@
   Values can only be String.
   Multiple field interpretations are supported.
   When the key is a keyword, then only name part is used."
-  [m default-query-field-names]
+  ^Document [m default-query-field-names]
   (doto (Document.) (flatten-paths m "." [] default-query-field-names)))
 
 (defn string->doc
