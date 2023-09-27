@@ -37,7 +37,7 @@
     "Delete all queries from the monitor.
     Resets the field-name analyzer mappings.")
   (debug [this docs] [this docs options]
-    "Matches and also returns information about which queries were
+    "Matches a batch of docs and also returns information about which queries were
     selected by the presearcher, and why.
     Only makes sense when presearcher is used."))
 

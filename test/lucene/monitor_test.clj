@@ -288,9 +288,8 @@
         options {:presearcher :term-filtered}]
     (with-open [monitor (m/monitor options)]
       (m/register monitor [{:id            "1"
-                            :query         "test prefix foo:bar"
+                            :query         "foo:test prefix foo:bar"
                             :default-field "foo"}])
       (let [matches (m/debug monitor docs options)]
         (is (= [[{:id                  "1"
-                  :presearcher-matches " foo:test foo:prefix"}]] matches))))))
-
+                  :presearcher-matches " foo:prefix foo:test"}]] matches))))))
