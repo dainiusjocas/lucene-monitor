@@ -1,22 +1,16 @@
 (ns lucene.monitor.document
   (:require [clojure.string :as string])
   (:import (java.util Iterator List Map Map$Entry Set)
-           (org.apache.lucene.document Document Field FieldType)
-           (org.apache.lucene.index IndexOptions)))
+           (org.apache.lucene.document Document Field$Store TextField)))
 
 (set! *warn-on-reflection* true)
-
-(def ^FieldType field-type
-  (doto (FieldType.)
-    (.setTokenized true)
-    (.setIndexOptions IndexOptions/DOCS)))
 
 (defn- ->field
   "Creates Field object. If value is not a String then stringifies it."
   [^String field-name value]
   (cond
-    (string? value) (Field. field-name ^String value field-type)
-    :else (Field. field-name (str value) field-type)))
+    (string? value) (TextField. field-name ^String value Field$Store/NO)
+    :else (TextField. field-name (str value) Field$Store/NO)))
 
 (defn- add-field!
   "Mutates the Document by adding field(s) to it."
