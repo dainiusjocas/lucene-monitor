@@ -1,14 +1,13 @@
 {:paths
  ["src" "resources"]
- :deps {org.apache.lucene/lucene-monitor {:mvn/version "9.7.0"}
-        lt.jocas/lucene-custom-analyzer  {:mvn/version "1.0.36"}
-        lt.jocas/lucene-query-parsing    {:mvn/version "1.0.11"}
+ :deps {org.apache.lucene/lucene-monitor {:mvn/version "9.8.0"}
+        lt.jocas/lucene-custom-analyzer  {:mvn/version "1.0.37"}
+        lt.jocas/lucene-query-parsing    {:mvn/version "1.0.12"}
         com.cnuernber/charred            {:mvn/version "1.033"}}
  :aliases
  {:dev   {:extra-paths ["dev"]
           :extra-deps  {babashka/fs         {:mvn/version "0.4.19"}
                         criterium/criterium {:mvn/version "0.4.6"}}}
-
   :test  {:extra-paths ["test"]
           :extra-deps  {babashka/fs {:mvn/version "0.4.19"}
                         io.github.cognitect-labs/test-runner
